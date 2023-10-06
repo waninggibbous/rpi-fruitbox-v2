@@ -3,6 +3,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+#include <random>
+#include <string>
+
+
+
 // #define DEBUG_LOG_SONG_SORTING
 
 using namespace std;
@@ -112,6 +121,7 @@ DatabaseClass::DatabaseClass(void)
         SelectSortFunction(sort_func, "Title", SortByTitle, SortByTitleDescending, descending);
         break;        
 
+      case sort_songs_by_e::ArtistShuffle :
       case sort_songs_by_e::Artist :
         if (Config->ini_general->ignore_artist_prefix_the)
         {
@@ -181,6 +191,13 @@ DatabaseClass::DatabaseClass(void)
     }
   }
 
+ //For ArtistShuffle create pairs of Artists to use for title strip A and B sides, then shuffle the pairs and any singletons
+ if (sort_songs_by_e == ArtistShuffle) {
+    log_file << "Artist (shuffled groups)..." << endl;
+    shuffleWithSameValuesTogether(DatabaseClass::database);
+}
+
+  
   // construct song title_strips (depends upon Config->songs_per_title_strip and Config->pair_songs)
   status.num_songs_str = to_string(number_of_songs);
 
@@ -189,6 +206,46 @@ DatabaseClass::DatabaseClass(void)
   BuildTitleStrips();
 
   delete DatabaseClass::ListDialog;
+}
+
+struct Record {
+    std::string name;
+    int Artist;
+};
+
+// Function to shuffle a vector while keeping identical values together with a maximum group size of 2
+void shuffleWithSameValuesTogether(std::vector<Record>& records) {
+    // Create a map to store groups of identical values
+    std::unordered_map<int, std::vector<Record>> valueGroups;
+
+    // Group records based on their Artist values with a maximum group size of 2
+    for (const auto& record : records) {
+        if (valueGroups[record.Artist].size() < 2) {
+            valueGroups[record.Artist].push_back(record);
+        }
+    }
+
+    // Shuffle each group separately
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    for (auto& pair : valueGroups) {
+        std::shuffle(pair.second.begin(), pair.second.end(), gen);
+    }
+
+    // Shuffle the groups themselves
+    std::vector<std::vector<Record>> shuffledGroups;
+    for (auto& pair : valueGroups) {
+        shuffledGroups.push_back(pair.second);
+    }
+    std::shuffle(shuffledGroups.begin(), shuffledGroups.end(), gen);
+
+    // Merge the shuffled groups back into the original vector
+    int index = 0;
+    for (const auto& group : shuffledGroups) {
+        for (const auto& record : group) {
+            records[index++] = record;
+        }
+    }
 }
 
 void DatabaseClass::ReadFile(void)
@@ -520,6 +577,11 @@ bool DatabaseClass::CheckNewSortSectionStart(song_t *song)
       // log_file << "Title..." << endl;
       break;
 
+    case sort_songs_by_e::ArtistShuffle :
+      str = &song->artist;
+      // log_file << "Artist Shuffle..." << endl;
+      break;
+ 
     case sort_songs_by_e::Artist :
       str = &song->artist;
       // log_file << "Artist..." << endl;
