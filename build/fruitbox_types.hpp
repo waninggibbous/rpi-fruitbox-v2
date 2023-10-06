@@ -427,6 +427,7 @@ enum class select_buttons_sequence_e
 enum class sort_songs_by_e
 {
   Title,
+  ArtistShuffle,
   Artist,
   Album,
   AlbumArtist,
