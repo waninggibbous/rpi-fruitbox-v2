@@ -210,7 +210,7 @@ DatabaseClass::DatabaseClass(void)
 
 struct Record {
     std::string name;
-    int Artist;
+    int artist;
 };
 
 // Function to shuffle a vector while keeping identical values together with a maximum group size of 2
@@ -220,8 +220,8 @@ void shuffleWithSameValuesTogether(std::vector<Record>& records) {
 
     // Group records based on their Artist values with a maximum group size of 2
     for (const auto& record : records) {
-        if (valueGroups[record.Artist].size() < 2) {
-            valueGroups[record.Artist].push_back(record);
+        if (valueGroups[record.artist].size() < 2) {
+            valueGroups[record.artist].push_back(record);
         }
     }
 
